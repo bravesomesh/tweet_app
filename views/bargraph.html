@@ -1,0 +1,163 @@
+<!DOCTYPE html>
+<html>
+<head>
+<meta charset="utf-8">
+<style>
+    body {
+        font: 14px sans-serif;
+    }
+    .axis path, .axis line {
+        fill: none;
+        stroke: black;
+        shape-rendering: crispEdges;
+    }
+    .axis path{
+        fill: none;
+        stroke: none;
+    }
+    .bar {
+        fill: steelblue;
+    }
+</style>
+</head>
+<script type="text/javascript" src="http://d3js.org/d3.v3.min.js"></script>
+<script src="https://cdn.socket.io/socket.io-1.2.1.js"></script>
+<script src="http://cdnjs.cloudflare.com/ajax/libs/underscore.js/1.7.0/underscore-min.js"></script>
+<script src="https://ajax.googleapis.com/ajax/libs/angularjs/1.0.6/angular.min.js"></script>
+<script src="js/reusable_chart.js"></script>
+
+<body>
+
+
+<div ng-app="charts">
+    <div ng-controller="mainCtrl">
+        <chart-form></chart-form>
+        <bar-chart height="options.height" data="data" hovered="hovered(args)"></bar-chart>
+    </div>
+</div>
+
+<script>
+var _hashtags = {};
+var num_tweets = 0;
+
+angular.module('charts', [])
+    .factory('socket', ['$rootScope', function ($rootScope) {
+
+        var safeApply = function(scope, fn) {
+          if (scope.$$phase) {
+            fn(); // digest already in progress, just run the function
+          } else {
+            scope.$apply(fn); // no digest in progress, run with $apply
+          }
+        };
+
+        var socket = io.connect('http://localhost:4000/');
+
+        return {
+          on: function (eventName, callback) {
+            socket.on(eventName, function () {  
+              var args = arguments;
+              safeApply($rootScope, function () {
+                callback.apply(socket, args);
+              });
+            });
+          },
+          emit: function (eventName, data, callback) {
+            socket.emit(eventName, data, function () {
+              var args = arguments;
+              safeApply($rootScope, function () {
+                if (callback) {
+                  callback.apply(socket, args);
+                }
+              });
+            })
+          },
+          disconnect: function () {
+            socket.disconnect();
+          },
+          socket: socket
+        };
+
+        }])
+    .controller('mainCtrl',['$scope','socket', function AppCtrl ($scope, socket) {
+        $scope.options = {width: 500, height: 300, 'bar': 'aaa'};
+        $scope.data = {"angular":12,"js":15};
+        $scope.hovered = function(d){
+            $scope.barValue = d.name;
+            //$scope.$apply();
+        };
+        $scope.barValue = 'None';
+    }])
+    .directive('barChart', function(){
+        var chart = d3.custom.barChart();
+        return {
+            restrict: 'E',
+            replace: true,
+            template: '<div class="chart"></div>',
+            scope:{
+                height: '=height',
+                data: '=data',
+                hovered: '&hovered'
+            },
+            link: function(scope, element, attrs) {
+                var chartEl = d3.select(element[0]);
+                chart.on('customHover', function(d, i){
+                    scope.hovered({args:d});
+                });
+
+                scope.$watch('data', function (newVal, oldVal) {
+                    console.log("old val "+JSON.stringify(oldVal)+"new val "+JSON.stringify(newVal));
+                    chartEl.datum(newVal).call(chart);
+                });
+
+                scope.$watch('height', function(d, i){
+                    chartEl.call(chart.height(scope.height));
+                })
+            }
+        }
+    })
+    .directive('chartForm', function(){
+        return {
+            restrict: 'E',
+            replace: true,
+            controller: function AppCtrl ($scope, socket) {
+                $scope.start = function(d, i) {
+                    $scope.btnIsDisabled = true;
+                    socket.on("new tweet", function(tweet) {
+                        var hashtags = tweet.entities.hashtags;                                                
+                        if(hashtags.length) {
+                            _.each(hashtags, function(hashtag) {
+                                hashtag = hashtag.text.toLowerCase();
+                                // if(hashtag == 'food' || hashtag == 'pizza' || hashtag == 'samosa') {
+                                //     console.log(hashtag);
+                                    if(_hashtags[hashtag]) {
+                                        _hashtags[hashtag]++;
+                                    }
+                                    else {
+                                        _hashtags[hashtag] = 1;
+                                    }
+                                //}
+                            });
+                        }
+                        num_tweets++;                
+                    });  
+                };
+                
+                $scope.update = function(d, i) {
+                    //var chartEl = d3.select(element[0]);
+                    $scope.data = _hashtags;
+                    chartEl.datum(_hashtags).call(chart);
+                };
+            },
+            template: '<div class="form">' +
+                    'Height: {{options.height}}<br />' +
+                    '<input type="range" ng-model="options.height" min="100" max="800"/>' +
+                    '<br /><button ng-click="start()" ng-disabled="btnIsDisabled">Start</button>'+
+                    '<button ng-click="update()" ng-disabled="false">Update Data</button>' +
+                    '<br />Hovered bar data: {{barValue}}</div>'
+        }
+    });
+
+</script>
+</body>
+</html>
