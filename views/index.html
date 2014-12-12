@@ -119,6 +119,7 @@ angular.module('charts', [])
                 var chartEl = d3.select($element[0]);
                 // $scope.start = function(d, i) {
                     //$scope.btnIsDisabled = true;
+                    //socket.emit("ready");
                     socket.on("new tweet", function(tweet) {
                         var hashtags = tweet.entities.hashtags;
                         setInterval(function(){

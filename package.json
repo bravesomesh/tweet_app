@@ -2,10 +2,10 @@
   "name": "first-demo",
   "description": "A Node.js, socket.io demo.",
   "dependencies": {
-    "ejs": "^1.0.0",
+    "ejs": "~1.0.0",
     "express": "~4.9.x",
-    "ntwitter": "0.5.0",
-    "socket.io": "^1.2.1",
+    "ntwitter": "~0.5.0",
+    "socket.io": "~1.2.1",
     "twit": "~1.1.x"
   },
   "engines": {
