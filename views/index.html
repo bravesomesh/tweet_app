@@ -31,7 +31,7 @@
 
 <div ng-app="charts">
     <div ng-controller="mainCtrl">
-        <chart-form></chart-form>
+        <div>Hovered bar Data {{barValue}}</div>
         <bar-chart height="options.height" data="data" hovered="hovered(args)"></bar-chart>
     </div>
 </div>
@@ -42,7 +42,6 @@ var num_tweets = 0;
 
 angular.module('charts', [])
     .factory('socket', ['$rootScope', function ($rootScope) {
-
         var safeApply = function(scope, fn) {
           if (scope.$$phase) {
             fn(); // digest already in progress, just run the function
@@ -109,56 +108,56 @@ angular.module('charts', [])
 
                 scope.$watch('data', function (newVal, oldVal) {
                     console.log("old val "+JSON.stringify(oldVal)+"new val "+JSON.stringify(newVal));
-                    chartEl.datum(newVal).call(chart);
+                    //chartEl.datum(newVal).call(chart);
                 });
 
                 scope.$watch('height', function(d, i){
                     chartEl.call(chart.height(scope.height));
                 })
+            },
+            controller: function AppCtrl ($scope, $element, socket) {
+                var chartEl = d3.select($element[0]);
+                // $scope.start = function(d, i) {
+                    //$scope.btnIsDisabled = true;
+                    socket.on("new tweet", function(tweet) {
+                        var hashtags = tweet.entities.hashtags;
+                        setInterval(function(){
+                             if(hashtags.length) {
+                                _.each(hashtags, function(hashtag) {
+                                    hashtag = hashtag.text.toLowerCase();
+                                    // if(hashtag == 'food' || hashtag == 'pizza' || hashtag == 'samosa') {
+                                    //     console.log(hashtag);
+                                        if(_hashtags[hashtag]) {
+                                            _hashtags[hashtag]++;
+                                        }
+                                        else {
+                                            _hashtags[hashtag] = 1;
+                                        }
+                                    //}
+                                });
+                            }
+                            num_tweets++;    
+                        },5000);     
+                    });  
+                // };
+                setInterval(function(){
+                    chartEl.datum(_hashtags).call(chart);
+                }, 10000);
             }
         }
-    })
-    .directive('chartForm', function(){
-        return {
-            restrict: 'E',
-            replace: true,
-            controller: function AppCtrl ($scope, socket) {
-                $scope.start = function(d, i) {
-                    $scope.btnIsDisabled = true;
-                    socket.on("new tweet", function(tweet) {
-                        var hashtags = tweet.entities.hashtags;                                                
-                        if(hashtags.length) {
-                            _.each(hashtags, function(hashtag) {
-                                hashtag = hashtag.text.toLowerCase();
-                                // if(hashtag == 'food' || hashtag == 'pizza' || hashtag == 'samosa') {
-                                //     console.log(hashtag);
-                                    if(_hashtags[hashtag]) {
-                                        _hashtags[hashtag]++;
-                                    }
-                                    else {
-                                        _hashtags[hashtag] = 1;
-                                    }
-                                //}
-                            });
-                        }
-                        num_tweets++;                
-                    });  
-                };
-                
-                $scope.update = function(d, i) {
-                    //var chartEl = d3.select(element[0]);
-                    $scope.data = _hashtags;
-                    //chartEl.datum(_hashtags).call(chart);
-                };
-            },
-            template: '<div class="form">' +
-                    'Height: {{options.height}}<br />' +
-                    '<input type="range" ng-model="options.height" min="100" max="800"/>' +
-                    '<br /><button ng-click="start()" ng-disabled="btnIsDisabled">Start</button>'+
-                    '<button ng-click="update()" ng-disabled="false">Update Data</button>' +
-                    '<br />Hovered bar data: {{barValue}}</div>'
-        }
     });
+    // .directive('chartForm', function(){
+    //     return {
+    //         restrict: 'E',
+    //         replace: true,
+    //         template: '<div class="form">' +
+    //                 'Height: {{options.height}}<br />' +
+    //                 '<input type="range" ng-model="options.height" min="100" max="800"/>' +
+    //                 '<br /><button ng-click="start()" ng-disabled="btnIsDisabled">Start</button>'+
+    //                 '<button ng-click="update()" ng-disabled="false">Update Data</button>' +
+    //                 '<br />Hovered bar data: {{barValue}}</div>'
+    //     }
+    // });
 
 </script>
 </body>

@@ -2,7 +2,7 @@ d3.custom = {};
 
 d3.custom.barChart = function module() {
     var margin = {top: 20, right: 20, bottom: 40, left: 40},
-        width = 500,
+        width = 1500,
         height = 500,
         gap = 0,
         ease = 'cubic-in-out';
@@ -13,11 +13,13 @@ d3.custom.barChart = function module() {
         _selection.each(function(_data) {
             var series = [];
             _.each(_data, function(count, hashtag) {
-                if(count > 2) {
+                if(count > 20) {
                     series.push({
                         name: hashtag,
                         data: count
                     });
+                } else {
+                    console.log('wait');
                 }
             });
             
@@ -25,7 +27,7 @@ d3.custom.barChart = function module() {
                 chartH = height - margin.top - margin.bottom;
 
             var x1 = d3.scale.ordinal()
-                .domain(series.map(function(d, i){ return d.name;/*return i;*/ }))
+                .domain(series.map(function(d, i){ /*return d.name;*/return i; }))
                 .rangeRoundBands([0, chartW], .1);
 
 
@@ -88,7 +90,7 @@ d3.custom.barChart = function module() {
                 .ease(ease)
                 .attr({
                     width: barW,
-                    x: function(d, i) { return x1(d.name) + gapSize/2; },
+                    x: function(d, i) { return x1(i) + gapSize/2; },
                     y: function(d, i) { return y1(d.data); },
                     height: function(d, i) { return chartH - y1(d.data); }
                 });
